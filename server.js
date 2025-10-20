@@ -1,6 +1,6 @@
 // =========================================================
 // Content Focus: Servidor Web para Aplicación Embebida
-// Versión que corrige el error 'is not a function' usando desestructuración.
+// Versión que corrige el nombre de la función para el SDK @whop/api.
 // =========================================================
 import 'dotenv/config'; 
 import express from 'express';
@@ -12,18 +12,17 @@ const PORT = process.env.PORT || 3000;
 // *********************************************************
 //          CONFIGURACIÓN: LEE DESDE VARIABLES DE ENTORNO
 // *********************************************************
-// El SDK lee estas variables automáticamente del proceso.env
 const YOUR_APP_ID = process.env.WHOP_APP_ID; 
 const YOUR_API_KEY = process.env.WHOP_API_KEY; 
 
 // Inicialización del cliente con el SDK correcto
 const client = new WhopServerSdk({
-    appId: YOUR_APP_ID, // Nota: el campo es 'appId' (camelCase)
+    appId: YOUR_APP_ID, 
     apiKey: YOUR_API_KEY
 });
 
 // Función para generar la salida HTML de la auditoría
-function displayResults(companyId, interactionData) {
+function displayResults(companyId, interactionCount) {
     let auditResults = `
         <style>
             body { font-family: sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; }
@@ -34,20 +33,20 @@ function displayResults(companyId, interactionData) {
         </style>
         <div class="container">
             <h2>Content Focus: Course Retention Audit</h2>
-            <p class="success">✅ Connection successful with Whop API.</p>
+            <p class="success">✅ API Connection: Success</p>
             <p>Auditing data for Company ID: <strong>${companyId}</strong></p>
-            <p>Total Lesson Interactions Found: <strong>${interactionData.length}</strong></p>
             <hr>
     `;
 
-    if (interactionData.length > 0) {
+    if (interactionCount > 0) {
         auditResults += `
             <h3>Analysis Summary:</h3>
-            <p>The app found **${interactionData.length}** content interactions! This confirms your course has active users.</p>
+            <p>The app found **${interactionCount}** lesson interactions! This confirms your course has active users.</p>
             <p>You now have the data needed to analyze which lessons are causing members to leave and fix them.</p>
+            <p style="color: #4CAF50;">✅ Status: READY TO ANALYZE.</p>
         `;
     } else {
-        auditResults += `<p>ℹ️ **INFO:** No course lesson interaction data found. Please ensure you have an active course with members viewing content, or check your Whop settings.</p>`;
+        auditResults += `<p>ℹ️ **INFO:** No course lesson interaction data found for this company. Please ensure you have an active course with members viewing content, or check your Whop settings.</p>`;
     }
     
     auditResults += "</div>";
@@ -60,25 +59,26 @@ function displayResults(companyId, interactionData) {
 // =========================================================
 app.get('/auditor', async (req, res) => {
     
-    // 1. Leer el ID del Cliente de la URL
     const companyId = req.query.whop_company_id;
     
     if (!companyId) {
         return res.status(400).send("Error: Application must be loaded by Whop's dashboard (Missing whop_company_id parameter).");
     }
     
-    // 2. Ejecutar la Lógica de Negocio (Content Auditor)
     try {
-        // CORRECCIÓN CRÍTICA: Desestructuración de la función para asegurar la sintaxis correcta.
-        const { listCourseLessonInteractions } = client;
+        // CORRECCIÓN FINAL: Usamos el nombre de función correcto: listCourseLessonInteractionsConnection
+        const { listCourseLessonInteractionsConnection } = client;
         
-        const response = await listCourseLessonInteractions({
+        const response = await listCourseLessonInteractionsConnection({
              companyId: companyId,
-             first: 50 // Carga rápida
+             first: 50 
         });
         
+        // Contamos las interacciones usando el campo 'data' (patrón de 'Connection')
+        const interactionCount = response.data.length;
+
         // 3. Devolver el resultado (HTML) al Creador
-        const htmlOutput = displayResults(companyId, response.data);
+        const htmlOutput = displayResults(companyId, interactionCount);
         res.send(htmlOutput);
         
     } catch (error) {

@@ -39,10 +39,10 @@ app.get("/auditor", async (req, res) => {
 
   try {
     // Llamada de ejemplo a la API Whop
-    const response = await client.courseLessonInteractions.list({
-      companyId: companyId,
-      first: 50,
-    });
+ const response = await client.listCourseLessonInteractions({
+     companyId: companyId,
+     first: 50
+});
 
     const totalInteractions = response.data?.length || 0;
 
@@ -73,3 +73,4 @@ app.get("/auditor", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ MRR Guard Server corriendo en el puerto ${PORT}`);
 });
+
